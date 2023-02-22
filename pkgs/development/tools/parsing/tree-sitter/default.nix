@@ -58,11 +58,32 @@ let
     { tree-sitter-org-nvim = grammars'.tree-sitter-org-nvim // { language = "org"; }; } //
     { tree-sitter-typescript = grammars'.tree-sitter-typescript // { location = "typescript"; }; } //
     { tree-sitter-tsx = grammars'.tree-sitter-typescript // { location = "tsx"; }; } //
-    { tree-sitter-markdown = grammars'.tree-sitter-markdown // { location = "tree-sitter-markdown"; }; } //
-    { tree-sitter-markdown-inline = grammars'.tree-sitter-markdown // { language = "markdown_inline"; location = "tree-sitter-markdown-inline"; }; };
+    { tree-sitter-markdown = grammars'.tree-sitter-markdown // { location = "tree-sitter-markdown"; remapSource = true; }; } //
+    { tree-sitter-markdown-inline = grammars'.tree-sitter-markdown // { language = "markdown_inline"; location = "tree-sitter-markdown-inline"; remapSource = true; }; };
 
   # Fetch their respective sources
-  grammarSources = builtins.mapAttrs (name: grammar: if grammar ? src then grammar.src else fetchGrammar grammar) grammarsWithOverrides;
+  grammarSources = builtins.mapAttrs
+    (name: grammar:
+      let
+        source = (if grammar ? src then grammar.src else fetchGrammar grammar);
+      in
+
+      # In some grammars, the path inside the package.json file is incorrect, and we have to merge the files from
+      # ${grammar.location} with the root directory's package.json, which contains the right tree-sitter configuration
+      if grammar ? location && grammar ? remapSource then
+        runCommand "${name}" { } ''
+          mkdir -p $out
+          ln -s ${source}/${grammar.location}/* $out/
+
+          if [ ! -f $out/package.json ]; then
+            ln -s ${source}/package.json $out/
+          fi
+        ''
+      else
+        source
+    )
+    grammarsWithOverrides;
+
   grammars = linkFarm "grammars" grammarSources;
 
   buildGrammar = callPackage ./grammar.nix { };
