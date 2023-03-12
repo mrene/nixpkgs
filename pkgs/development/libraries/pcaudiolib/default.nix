@@ -15,13 +15,13 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "pcaudiolib";
-  version = "1.2";
+  version = "unstable-2023-03-12";
 
   src = fetchFromGitHub {
     owner = "espeak-ng";
-    repo = finalAttrs.pname;
-    rev = finalAttrs.version;
-    hash = "sha256-ZG/HBk5DHaZP/H3M01vDr3M2nP9awwsPuKpwtalz3EE=";
+    repo = "pcaudiolib";
+    rev = "494e7cda93b03539288999094001f49c5c4e9bdf";
+    hash = "sha256-QS2JSMY5hhSmkBup7bDZdzHMNYSdnkeDubxQUQssyLg=";
   };
 
   nativeBuildInputs = [
@@ -48,6 +48,5 @@ stdenv.mkDerivation (finalAttrs: {
     license = licenses.gpl3Plus;
     maintainers = with maintainers; [ aske ];
     platforms = platforms.unix;
-    badPlatforms = platforms.darwin;
   };
 })

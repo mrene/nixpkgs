@@ -20,7 +20,7 @@
 , withFlite ? true, flite
 , withEspeak ? true, espeak, sonic, pcaudiolib
 , mbrola
-, withPico ? true, svox
+, withPico ? stdenv.hostPlatform.isLinux, svox
 }:
 
 let
@@ -63,8 +63,9 @@ in stdenv.mkDerivation rec {
     libsndfile
     libao
     libpulseaudio
-    alsa-lib
     python
+  ]  ++ lib.optionals withAlsa [
+    alsa-lib
   ] ++ lib.optionals withEspeak [
     espeak
     sonic
@@ -79,9 +80,16 @@ in stdenv.mkDerivation rec {
     pyxdg
   ];
 
-  configureFlags = [
+  configureFlags = let 
+    backends = 
+      lib.optional withLibao "libao" ++
+      lib.optional withPulse "pulse" ++
+      lib.optional withAlsa "alsa" ++
+      lib.optional withOss "oss";
+  in
+  [
     # Audio method falls back from left to right.
-    "--with-default-audio-method=\"libao,pulse,alsa,oss\""
+    "--with-default-audio-method=\"${builtins.concatStringsSep "," backends}\""
     "--with-systemdsystemunitdir=${placeholder "out"}/lib/systemd/system"
   ] ++ lib.optionals withPulse [
   "--with-pulse"
@@ -97,7 +105,7 @@ in stdenv.mkDerivation rec {
     "--with-pico"
   ];
 
-  postPatch = ''
+  postPatch = lib.optionalString withPico ''
     substituteInPlace src/modules/pico.c --replace "/usr/share/pico/lang" "${svox}/share/pico/lang"
   '';
 
@@ -115,6 +123,7 @@ in stdenv.mkDerivation rec {
       berce
       jtojnar
     ];
-    platforms = platforms.linux;
+    platforms = platforms.linux ++ platforms.darwin;
+    # Does not build on darwin because of the use of __attribute__ ((weak, "symbol")) which isn't supported
   };
 }

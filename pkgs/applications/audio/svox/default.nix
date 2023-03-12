@@ -23,7 +23,7 @@ stdenv.mkDerivation {
   meta = with lib; {
     description = "Text-to-speech engine";
     homepage = "https://android.googlesource.com/platform/external/svox";
-    platforms = platforms.linux;
+    platforms = platforms.linux ++ platforms.darwin;
     license = licenses.asl20;
     maintainers = with maintainers; [ abbradar ];
   };

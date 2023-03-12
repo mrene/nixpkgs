@@ -37,6 +37,6 @@ stdenv.mkDerivation rec {
     homepage = "https://github.com/numediart/MBROLA";
     license = licenses.agpl3Plus;
     maintainers = with maintainers; [ davidak ];
-    platforms = platforms.linux;
+    platforms = platforms.linux ++ platforms.darwin;
   };
 }

@@ -14,17 +14,20 @@
 , pcaudiolib
 , sonicSupport ? true
 , sonic
+, CoreAudio
+, AudioToolbox
+, AudioUnit
 }:
 
 stdenv.mkDerivation rec {
   pname = "espeak-ng";
-  version = "1.51.1";
+  version = "unstable-2023-03-12";
 
   src = fetchFromGitHub {
     owner = "espeak-ng";
     repo = "espeak-ng";
-    rev = version;
-    hash = "sha256-aAJ+k+kkOS6k835mEW7BvgAIYGhUHxf7Q4P5cKO8XTk=";
+    rev = "f520fecb4ac0ee738d9b806ec17e7625b2570c91";
+    hash = "sha256-MCRThEszgTIhRNrBdkbeV1dJcsQHx71cLY72fONE6JQ=";
   };
 
   patches = lib.optionals mbrolaSupport [
@@ -39,7 +42,8 @@ stdenv.mkDerivation rec {
 
   buildInputs = lib.optional mbrolaSupport mbrola
     ++ lib.optional pcaudiolibSupport pcaudiolib
-    ++ lib.optional sonicSupport sonic;
+    ++ lib.optional sonicSupport sonic
+    ++ lib.optionals stdenv.isDarwin [ CoreAudio AudioToolbox AudioUnit ];
 
   preConfigure = "./autogen.sh";
 
