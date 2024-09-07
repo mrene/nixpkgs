@@ -16,17 +16,18 @@ mkYarnPackage rec {
     hash = "sha256-GJzclfyk/HsT5NVRh6T1mUpEAVKWjovH71ZY2JoBUig=";
   };
 
-  # packageJSON = src + "/package.json";
-
   offlineCache = fetchYarnDeps {
-    yarnLock = src + "/yarn.lock";
-    hash = "sha256-111sRR9zA9D22xBdh4XfLueGVA2ERXmGEp54x0OFDFY=";
+    yarnLock = "${src}/yarn.lock";
+    hash = "sha256-gx1tDgNa3qRb0IdoLDK7TX0/XhV4bAjEMQSaaS1nQc0=";
   };
 
   buildPhase = ''
     runHook preBuild
 
-    yarn --offline build
+    # The build process expects "rimraf" to be in path, which is installed via yarn
+    export PATH=$(pwd)/node_modules/.bin:$PATH
+    export HOME=$(mktemp -d)
+    yarn run build --offline
 
     runHook postBuild
   '';
@@ -35,10 +36,12 @@ mkYarnPackage rec {
     runHook preInstall
 
     mkdir $out
-    cp dist/horizon-card.js $out
+    cp ./deps/lovelace-horizon-card/dist/lovelace-horizon-card.js $out/
 
     runHook postInstall
   '';
+
+  doDist = false;
 
   meta = with lib; {
     description = "Sun Card successor: Visualize the position of the Sun over the horizon";
