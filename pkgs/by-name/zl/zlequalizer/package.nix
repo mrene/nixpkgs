@@ -20,6 +20,7 @@
   ninja,
   pkg-config,
   writableTmpDirAsHomeHook,
+  darwin,
 }:
 
 clangStdenv.mkDerivation (finalAttrs: {
@@ -39,14 +40,16 @@ clangStdenv.mkDerivation (finalAttrs: {
     ninja
     pkg-config
     writableTmpDirAsHomeHook
-  ];
+  ] ++ lib.optionals clangStdenv.isDarwin [ darwin.sigtool ];
 
   buildInputs = [
-    alsa-lib
     curl
     expat
     fontconfig
     freetype
+    lv2
+  ] ++ lib.optionals clangStdenv.isLinux [
+    alsa-lib
     libGL
     libXcursor
     libXext
@@ -55,12 +58,11 @@ clangStdenv.mkDerivation (finalAttrs: {
     libepoxy
     libjack2
     libxkbcommon
-    lv2
   ];
 
   # JUCE dlopen's these at runtime, crashes without them
-  NIX_LDFLAGS = (
-    toString [
+  NIX_LDFLAGS = lib.optionalString clangStdenv.isLinux (
+     toString [
       "-lX11"
       "-lXext"
       "-lXcursor"
@@ -70,7 +72,7 @@ clangStdenv.mkDerivation (finalAttrs: {
   );
 
   # LTO needs special setup on Linux
-  postPatch = ''
+  postPatch = lib.optionalString clangStdenv.isLinux ''
     substituteInPlace CMakeLists.txt \
       --replace-fail 'juce::juce_recommended_lto_flags' '# Not forcing LTO'
   '';
@@ -80,7 +82,8 @@ clangStdenv.mkDerivation (finalAttrs: {
     (lib.cmakeFeature "ZL_JUCE_COPY_PLUGIN" "FALSE")
   ];
 
-  installPhase = ''
+  installPhase =
+  lib.optionalString clangStdenv.isLinux ''
     runHook preInstall
 
     mkdir -p $out/lib/{lv2,vst3}
@@ -91,6 +94,15 @@ clangStdenv.mkDerivation (finalAttrs: {
     install -Dm755 "ZLEqualizer_artefacts/Release/Standalone/ZL Equalizer 2" $out/bin/
 
     runHook postInstall
+  '' +
+  lib.optionalString clangStdenv.isDarwin ''
+    runHook preInstall
+
+    mkdir -p $out/Applications
+    cp -r ZLEqualizer_artefacts/Release/{AU,VST3} $out/
+    cp -r ZLEqualizer_artefacts/Release/Standalone/* $out/Applications/
+
+    runHook postInstall
   '';
 
   meta = {
@@ -98,6 +110,6 @@ clangStdenv.mkDerivation (finalAttrs: {
     description = "Versatile equalizer plugin for VST3, LV2 and standalone";
     license = [ lib.licenses.agpl3Plus ];
     maintainers = [ lib.maintainers.magnetophon ];
-    platforms = lib.platforms.linux;
+    platforms = lib.platforms.linux ++ lib.platforms.darwin;
   };
 })
